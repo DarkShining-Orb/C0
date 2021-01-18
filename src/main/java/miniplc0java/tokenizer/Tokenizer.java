@@ -134,26 +134,58 @@ public class Tokenizer {
     }
 
     private Token lexString() throws TokenizeError{
-        StringBuffer s = new StringBuffer();
-        Pos spos=it.currentPos();
-        Pos epos=it.nextPos();
+    	String s="";
+        char peek;
         it.nextChar();
-        while(StringIter.isRegularString(it.peekChar())){
-            if(it.peekChar()=='\\'){
-                if(!isEscapeSequence(s))
-                    throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+        Token token=new Token(TokenType.STRING_LITERAL, "", it.currentPos(), it.currentPos());
+        while(!it.isEOF()){
+            peek = it.peekChar();
+            if(peek != '"' && peek != '\r' && peek != '\n' && peek != '\t'){
+                if(peek == '\\'){
+                    it.nextChar();
+                    peek = it.peekChar();
+                    if(peek != '"' && peek != '\\' && peek != '\'' && peek != 'n' && peek != 't' && peek != 'r'){
+                        throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+                    }
+                    else {
+                        switch (peek){
+                            case '\\':
+                                s+= '\\';
+                                break;
+                            case '"':
+                                s+= '\"';
+                                break;
+                            case '\'':
+                                s+= '\'';
+                                break;
+                            case 'n':
+                                s+= '\n';
+                                break;
+                            case 't':
+                                s+= '\t';
+                                break;
+                            case 'r':
+                                s+= '\r';
+                                break;
+                        }
+                        it.nextChar();
+                    }
+                }
+                else{
+                    s+= peek;
+                    it.nextChar();
+                }
             }
-            else
-                s.append(it.nextChar());
+            else if(peek == '"'){
+                it.nextChar();
+                break;
+            }
+            else throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
         }
-        if(it.peekChar()=='\"')
-        {
-            it.nextChar();
-            epos = it.currentPos();
-            return new Token(TokenType.STRING_LITERAL,s.toString(),spos,epos);
-        }
-        else
-            throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+        token.setValue(s);
+        token.setEndPos(it.currentPos());
+        return token;
+
     }
 
     private Token lexChar() throws TokenizeError{
