@@ -208,7 +208,7 @@ public class Instruction {
         StringBuffer ss = new StringBuffer(ns);
         int bound = s.length()-1;
         for(int i = 0;i<=bound;i++){
-            ss.append("\'"+ s.charAt(i)+"\'");
+            ss.append(Integer.toHexString(s.charAt(i)));
             ss.append(" ");
         }
         return ss.toString();
