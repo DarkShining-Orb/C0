@@ -76,43 +76,6 @@ public final class Analyser {
     //函数列表
     List<Function> funcs = new ArrayList<>();
 
-    //重置属性
-    public void reset(){
-        locaCount = 0;
-        paramCount = 0;
-        instructions.clear();
-    }
-
-    //查找全局变量是否重复
-    public GlobalEntry findGlobal(String name){
-        for(GlobalEntry item:globalTable)
-        {
-            if(item.getName().equals(name))
-                return item;
-        }
-        return null;
-    }
-
-    //查找某个函数的某一级及其上级的局域变量
-    public SymbolEntry findLocal(String name,int belong,int level){
-        for(int i = symbolTable.size()-1;i>=0;i--)
-        {
-            SymbolEntry item = symbolTable.get(i);
-            if(item.getName().equals(name) && item.getBelong() == belong && item.getLevel()<=level)
-                return item;
-        }
-        return null;
-    }
-
-    //释放某一级的局域变量
-    public void releaseBlock(int level){
-        for(int i = symbolTable.size()-1; i>=0;i--)
-        {
-            if(symbolTable.get(i).getLevel() == level)
-                symbolTable.remove(i);
-        }
-    }
-
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
         this.instructions = new ArrayList<>();
@@ -195,22 +158,6 @@ public final class Analyser {
         }
     }
 
-    /**
-     * 获取下一个变量的栈偏移
-     * 
-     * @return
-     */
-
-
-    /**
-     * 添加一个符号
-     * 
-     * @param name          名字
-     * @param isInit 是否已赋值
-     * @param isConstant    是否是常量
-     * @param curPos        当前 token 的位置（报错用）
-     * @throws AnalyzeError 如果重复定义了则抛异常
-     */
     private void addLocal(String name, Type type, int belong, int level, boolean isInit, boolean isConstant,int stackSetoff,Pos curPos) throws AnalyzeError {
         SymbolEntry item = findLocal(name,belong,level);
         if(item == null){
@@ -224,7 +171,8 @@ public final class Analyser {
             }
         }
     }
-
+    
+    //未初始化局部变量
     private void addLocal(String name, Type type, int belong, int level, boolean isInit, boolean isConstant,int stackSetoff1,int stackSetoff2,Pos curPos) throws AnalyzeError {
         SymbolEntry item = findLocal(name,belong,level);
         if(item == null){
@@ -239,7 +187,7 @@ public final class Analyser {
         }
     }
 
-    //添加全局变量
+    //未初始化全局变量
     private void addGlobal(int id,String name, Type type, boolean isInit, boolean isConstant,Pos curPos) throws AnalyzeError {
         GlobalEntry item = findGlobal(name);
         if(item == null){
@@ -249,7 +197,7 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.DuplicateDeclaration,curPos);
     }
 
-    //添加全局变量
+    //初始化全局变量
     private void addGlobalValue(int id,String name,Object value, Type type, boolean isInit, boolean isConstant,Pos curPos) throws AnalyzeError {
         GlobalEntry item = findGlobal(name);
         if(item == null){
@@ -362,6 +310,63 @@ public final class Analyser {
     public void putBinOpration(String s, Pos curPos) throws AnalyzeError{
         if(recentType ==Type.Int)
         {
+        	switch(s) {
+        		case "+":
+        			instructions.add(new Instruction(Operation.addi));
+                    locaTypeTable.remove(stackSetoff1);
+                    stackSetoff1--;
+        			break;
+        		case "-":
+        			instructions.add(new Instruction(Operation.subi));
+                    locaTypeTable.remove(stackSetoff1);
+                    stackSetoff1--;
+                    break;
+        		case "*":
+        			instructions.add(new Instruction(Operation.muli));
+                    stackSetoff1--;
+                    break;
+        		case "/":
+        			instructions.add(new Instruction(Operation.divi));
+                    stackSetoff1--;
+                    break;
+        		case "==":
+        			instructions.add(new Instruction(Operation.cmpi));
+                    stackSetoff1--;
+                    anti = false;
+                    break;
+        		case ">":
+        			instructions.add(new Instruction(Operation.cmpi));
+                    instructions.add(new Instruction(Operation.setgt));
+                    stackSetoff1--;
+                    anti = true;
+                    break;
+        		case "<":
+        			instructions.add(new Instruction(Operation.cmpi));
+                    instructions.add(new Instruction(Operation.setlt));
+                    stackSetoff1--;
+                    anti = true;
+                    break;
+        		case ">=":
+        			instructions.add(new Instruction(Operation.cmpi));
+                    instructions.add(new Instruction(Operation.setlt));
+                    stackSetoff1--;
+                    anti = false;
+                    break;
+        		case "<=":
+        			instructions.add(new Instruction(Operation.cmpi));
+                    instructions.add(new Instruction(Operation.setgt));
+                    stackSetoff1--;
+                    anti = false;
+                    break;
+        		case "!=":
+        			instructions.add(new Instruction(Operation.cmpi));
+                    stackSetoff1--;
+                    anti = true;
+                    break;
+                default: throw new AnalyzeError(ErrorCode.InvalidInput,curPos);
+        	}
+        	
+        	/*
             if(s.equals("+"))
             {
                 instructions.add(new Instruction(Operation.addi));
@@ -426,73 +431,66 @@ public final class Analyser {
             }
             else
                 throw new AnalyzeError(ErrorCode.InvalidInput,curPos);
+            */
         }
         else if(recentType == Type.Double)
         {
-            if(s.equals("+"))
-                {
-                    instructions.add(new Instruction(Operation.addf));
-                    stackSetoff1--;
-                }
-            else if(s.equals("-"))
-                {
-                    instructions.add(new Instruction(Operation.subf));
-                    stackSetoff1--;
-                }
-            else if(s.equals("/"))
-                {
-                    instructions.add(new Instruction(Operation.divf));
-                    stackSetoff1--;
-                }
-            else if(s.equals("*"))
-                {
-                    instructions.add(new Instruction(Operation.mulf));
-                    stackSetoff1--;
-                }
-                //不清楚
-            else if(s.equals("=="))
-                {
-                    instructions.add(new Instruction(Operation.cmpf));
-                    stackSetoff1--;
-                    anti = false;
-                }
-            else if(s.equals(">"))
-                {
-                    instructions.add(new Instruction(Operation.cmpf));
-                    instructions.add(new Instruction(Operation.setgt));
-                    stackSetoff1--;
-                    anti = true;
-                }
-            else if(s.equals("<"))
-                {
-                    instructions.add(new Instruction(Operation.cmpf));
-                    instructions.add(new Instruction(Operation.setlt));
-                    stackSetoff1--;
-                    anti = true;
-                }
-            else if(s.equals(">="))
-                {
-                    instructions.add(new Instruction(Operation.cmpf));
-                    instructions.add(new Instruction(Operation.setlt));
-                    stackSetoff1--;
-                    anti = false;
-                }
-            else if(s.equals("<="))
-                {
-                    instructions.add(new Instruction(Operation.cmpf));
-                    instructions.add(new Instruction(Operation.setgt));
-                    stackSetoff1--;
-                    anti = false;
-                }
-            else if(s.equals("!="))
-                {
-                    instructions.add(new Instruction(Operation.cmpf));
-                    stackSetoff1--;
-                    anti = true;
-                }
-            else
-                throw new AnalyzeError(ErrorCode.InvalidInput,curPos);
-            }
+        	switch(s) {
+    		case "+":
+    			instructions.add(new Instruction(Operation.addf));
+                locaTypeTable.remove(stackSetoff1);
+                stackSetoff1--;
+    			break;
+    		case "-":
+    			instructions.add(new Instruction(Operation.subf));
+                locaTypeTable.remove(stackSetoff1);
+                stackSetoff1--;
+                break;
+    		case "*":
+    			instructions.add(new Instruction(Operation.mulf));
+                stackSetoff1--;
+                break;
+    		case "/":
+    			instructions.add(new Instruction(Operation.divf));
+                stackSetoff1--;
+                break;
+    		case "==":
+    			instructions.add(new Instruction(Operation.cmpf));
+                stackSetoff1--;
+                anti = false;
+                break;
+    		case ">":
+    			instructions.add(new Instruction(Operation.cmpf));
+                instructions.add(new Instruction(Operation.setgt));
+                stackSetoff1--;
+                anti = true;
+                break;
+    		case "<":
+    			instructions.add(new Instruction(Operation.cmpf));
+                instructions.add(new Instruction(Operation.setlt));
+                stackSetoff1--;
+                anti = true;
+                break;
+    		case ">=":
+    			instructions.add(new Instruction(Operation.cmpf));
+                instructions.add(new Instruction(Operation.setlt));
+                stackSetoff1--;
+                anti = false;
+                break;
+    		case "<=":
+    			instructions.add(new Instruction(Operation.cmpf));
+                instructions.add(new Instruction(Operation.setgt));
+                stackSetoff1--;
+                anti = false;
+                break;
+    		case "!=":
+    			instructions.add(new Instruction(Operation.cmpf));
+                stackSetoff1--;
+                anti = true;
+                break;
+            default: throw new AnalyzeError(ErrorCode.InvalidInput,curPos);
+        	}
+    	}
         else
             throw new AnalyzeError(ErrorCode.WrongType,curPos);
     }
@@ -521,16 +519,6 @@ public final class Analyser {
             else
                 analyseFunction();
         }
-        //throw new Error("Not implemented");
-    }
-
-    //判断是否为type
-    private void annlyseType(Pos curPos) throws CompileError{
-        if(expect(TokenType.IDENT).getValue().equals("int")||expect(TokenType.IDENT).getValue().equals("void"))
-            return ;
-        else
-            throw new AnalyzeError(ErrorCode.InvalidInput,curPos);
-
     }
 
     //分析表达式
@@ -541,7 +529,8 @@ public final class Analyser {
             //如果是减号规约为取反表达式
             if(check(TokenType.MINUS))
             {
-                analyseNegateExpr();
+            	expect(TokenType.MINUS);
+                analyseExpr();
                 isTrue = false;
                 instructions.add(new Instruction(Operation.push,0L));
                 //需要考虑取反数值的类型
@@ -556,9 +545,68 @@ public final class Analyser {
             else if(check(TokenType.IDENT)){
                 Token token1 = next();
                 String name = token1.getValueString();
-                if(check(TokenType.ASSIGN))
+              //函数调用
+                if(check(TokenType.L_PAREN))
                 {
-                    analyseAssginExpr();
+                    GlobalEntry g = findGlobal(name);
+                    Type type = g.getType();
+                    if(!g.isFunc)
+                        throw new AnalyzeError(ErrorCode.InvalidIdentifier,curPos);
+                    int id  = g.getId();
+                    expect(TokenType.L_PAREN);
+
+                    //压入返回值
+                    instructions.add(new Instruction(Operation.push,0L));
+                    stackSetoff2=0;
+                    stackSetoff1++;
+                    locaTypeTable.put(stackSetoff1,type);
+
+                    //存入函数返回值slot数
+                    slotTable.put(funcLevel,stackSetoff1);
+
+                    //保存原有类型表
+                    typeTable.put(funcLevel,locaTypeTable);
+
+                    //函数调用层次加一
+                    funcLevel++;
+
+                    //进入函数空间,清空原有的局域类型表
+                    locaTypeTable.clear();
+
+                    if(!check(TokenType.R_PAREN))
+                        analyseCallParamList();
+                    expect(TokenType.R_PAREN);
+                    funcLevel--;
+
+                    //重新取出原有的类型表
+                    locaTypeTable = typeTable.get(funcLevel);
+
+                    instructions.add(new Instruction(Operation.call,id));
+
+                    //获取原有的slot偏移
+                    stackSetoff1 = slotTable.get(funcLevel);
+                    //判断返回值类型
+                    if(type == Type.Void)
+                    {
+                        isSameType =  (recentType == Type.Void);
+                        recentType = Type.Void;
+                    }
+                    else if(type == Type.Int)
+                    {
+                        isSameType =  (recentType == Type.Int);
+                        recentType = Type.Int;
+                    }
+                    else
+                    {
+                        isSameType =  (recentType == Type.Double);
+                        recentType = Type.Double;
+                    }
+                    isTrue = false;
+                }
+                else if(check(TokenType.ASSIGN))
+                {
+                	expect(TokenType.ASSIGN);
+                    analyseExpr();
                     isTrue = true;
                 }
                 //函数调用
@@ -669,10 +717,12 @@ public final class Analyser {
                 analyseLiteralExpr();
                 isTrue = false;
             }
-            //如果是左括号规约为括号表达式
+            //括号表达式
             else if(check(TokenType.L_PAREN))
             {
-                analyseParenExpr();
+            	expect(TokenType.L_PAREN);
+                analyseExpr();
+                expect(TokenType.R_PAREN);
                 isTrue = false;
             }
             else
@@ -725,18 +775,6 @@ public final class Analyser {
         analyseExpr();
     }
 
-    //取反表达式
-    private void analyseNegateExpr() throws CompileError{
-        expect(TokenType.MINUS);
-        analyseExpr();
-    }
-
-    //赋值表达式
-    private void analyseAssginExpr() throws CompileError{
-        expect(TokenType.ASSIGN);
-        analyseExpr();
-    }
-
     //类型转换表达式
     private void analyseAsExpr() throws CompileError{
         analyseExpr();
@@ -755,10 +793,7 @@ public final class Analyser {
 
     //函数参数列表
     private void analyseCallParamList() throws CompileError{
-        //int count = 1;
         analyseExpr();
-        //instructions.add(new Instruction(Operation.arga,count++));
-        //instructions.add(new Instruction(Operation.store64));
         while(check(TokenType.COMMA)){
             expect(TokenType.COMMA);
             analyseExpr();
@@ -791,18 +826,6 @@ public final class Analyser {
             expect(TokenType.STRING_LITERAL);
         else
             throw new TokenizeError(ErrorCode.InvalidInput,curPos);
-    }
-
-    //标识符表达式
-    private void analyseIdentExpr() throws CompileError{
-        expect(TokenType.IDENT);
-    }
-
-    //括号表达式
-    private void analyseParenExpr() throws CompileError{
-        expect(TokenType.L_PAREN);
-        analyseExpr();
-        expect(TokenType.R_PAREN);
     }
 
     //两位运算符,
@@ -858,10 +881,6 @@ public final class Analyser {
                 addGlobalValue(globalCount, name,literal,t,true,true, token.getStartPos());
                 globalCount++;
             }
-
-            // 这里把常量值直接放进栈里，位置和符号表记录的一样。
-            // 更高级的程序还可以把常量的值记录下来，遇到相应的变量直接替换成这个常数值，
-            // 我们这里就先不这么干了。
         }
     }
 
@@ -915,7 +934,6 @@ public final class Analyser {
                     addGlobalValue(globalCount, name,literal,t,false,false, token.getStartPos());
                 globalCount++;
             }
-            // 如果没有初始化的话在栈里推入一个初始值
         }
     }
 
@@ -1124,5 +1142,42 @@ public final class Analyser {
 
     public List<Function> getFuncs() {
         return funcs;
+    }
+    
+  //重置函数有关属性
+    public void reset(){
+        locaCount = 0;
+        paramCount = 0;
+        instructions.clear();
+    }
+
+    //查找全局变量是否重复
+    public GlobalEntry findGlobal(String name){
+        for(GlobalEntry item:globalTable)
+        {
+            if(item.getName().equals(name))
+                return item;
+        }
+        return null;
+    }
+
+    //查找某个函数的某一级及其上级的局域变量
+    public SymbolEntry findLocal(String name,int belong,int level){
+        for(int i = symbolTable.size()-1;i>=0;i--)
+        {
+            SymbolEntry item = symbolTable.get(i);
+            if(item.getName().equals(name) && item.getBelong() == belong && item.getLevel()<=level)
+                return item;
+        }
+        return null;
+    }
+
+    //释放某一级的局域变量
+    public void releaseBlock(int level){
+        for(int i = symbolTable.size()-1; i>=0;i--)
+        {
+            if(symbolTable.get(i).getLevel() == level)
+                symbolTable.remove(i);
+        }
     }
 }
