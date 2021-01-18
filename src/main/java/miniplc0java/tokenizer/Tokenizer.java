@@ -37,11 +37,26 @@ public class Tokenizer {
             return lexString();
         else if(peek=='\'')
             return lexChar();
+        else if(peek=='/') {
+        	return handleComment();
+        }        	
         else {
             return lexOperatorOrUnknown();
         }
     }
-
+    
+    private Token handleComment() throws TokenizeError {
+    	while(!it.isEOF()) {
+    		if(it.peekChar() != '\n') {
+    			it.nextChar();//跳过其他字符
+    		} else {
+    			break;
+    		}
+    	}
+    	it.nextChar();
+    	return nextToken();
+    }
+    
     private Token lexUIntOrDouble() throws TokenizeError {
         // 请填空：
         // 直到查看下一个字符不是数字为止:
