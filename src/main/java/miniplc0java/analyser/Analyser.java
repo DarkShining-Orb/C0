@@ -480,9 +480,9 @@ public final class Analyser {
             }
     		case "putstr" : {
                 expect(TokenType.L_PAREN);
-                if(peek().getTokenType() != TokenType.UINT_LITERAL) {
-                	throw new AnalyzeError(ErrorCode.InvalidIdentifier,curPos);
-                }
+//                if(!check(TokenType.UINT_LITERAL)) {
+//                	throw new AnalyzeError(ErrorCode.InvalidIdentifier,curPos);
+//                }
                 analyseExpr();
                 expect(TokenType.R_PAREN);
                 instructions.add(new Instruction(Operation.prints));
@@ -531,7 +531,7 @@ public final class Analyser {
                 //需要考虑取反数值的类型
                 if(locaTypeTable.get(stackSetoff1)==Type.Double)
                     instructions.add(new Instruction(Operation.subf));
-                else if(locaTypeTable.get(stackSetoff1)==Type.Double)
+                else if(locaTypeTable.get(stackSetoff1)==Type.Int)
                     instructions.add(new Instruction(Operation.subi));
                 else
                     throw new AnalyzeError(ErrorCode.WrongType,curPos);
@@ -921,7 +921,7 @@ public final class Analyser {
             {
                 analyseBlockStml();
                 int mark3 = instructions.size();
-                instructions.add(mark2+1,new Instruction(Operation.br,mark3-mark2));
+                instructions.add(mark2+1,new Instruction(Operation.br,mark3-mark2-1));
             }
             //其它报错
             else
