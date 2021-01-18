@@ -901,9 +901,9 @@ public final class Analyser {
         analyseBlockStml();
         int mark2 = instructions.size();
         if(anti)
-            instructions.add(mark1,new Instruction(Operation.brfalse,mark2+1));
+            instructions.add(mark1,new Instruction(Operation.brfalse,mark2-mark1));
         else
-            instructions.add(mark1,new Instruction(Operation.brtrue,mark2+1));
+            instructions.add(mark1,new Instruction(Operation.brtrue,mark2-mark1));
         stackSetoff1--;
         //如果后面有else语句
         if(check(TokenType.ELSE_KW))
@@ -919,7 +919,7 @@ public final class Analyser {
             {
                 analyseBlockStml();
                 int mark3 = instructions.size();
-                instructions.add(mark2+1,new Instruction(Operation.br,mark3+1));
+                instructions.add(mark2+1,new Instruction(Operation.br,mark3-mark2));
             }
             //其它报错
             else
