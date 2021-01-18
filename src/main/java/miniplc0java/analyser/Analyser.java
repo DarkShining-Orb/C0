@@ -550,60 +550,62 @@ public final class Analyser {
                 	  ) {
                 		analyseStanderd(name,curPos);
                 	}
-                    GlobalEntry g = findGlobal(name);
-                    Type type = g.getType();
-                    if(!g.isFunc)
-                        throw new AnalyzeError(ErrorCode.InvalidIdentifier,curPos);
-                    int id  = g.getId();
-                    expect(TokenType.L_PAREN);
+                	else {
+                		GlobalEntry g = findGlobal(name);
+                        Type type = g.getType();
+                        if(!g.isFunc)
+                            throw new AnalyzeError(ErrorCode.InvalidIdentifier,curPos);
+                        int id  = g.getId();
+                        expect(TokenType.L_PAREN);
 
-                    //压入返回值
-                    instructions.add(new Instruction(Operation.push,0L));
-                    stackSetoff2=0;
-                    stackSetoff1++;
-                    locaTypeTable.put(stackSetoff1,type);
+                        //压入返回值
+                        instructions.add(new Instruction(Operation.push,0L));
+                        stackSetoff2=0;
+                        stackSetoff1++;
+                        locaTypeTable.put(stackSetoff1,type);
 
-                    //存入函数返回值slot数
-                    slotTable.put(funcLevel,stackSetoff1);
+                        //存入函数返回值slot数
+                        slotTable.put(funcLevel,stackSetoff1);
 
-                    //保存原有类型表
-                    typeTable.put(funcLevel,locaTypeTable);
+                        //保存原有类型表
+                        typeTable.put(funcLevel,locaTypeTable);
 
-                    //函数调用层次加一
-                    funcLevel++;
+                        //函数调用层次加一
+                        funcLevel++;
 
-                    //进入函数空间,清空原有的局域类型表
-                    locaTypeTable.clear();
+                        //进入函数空间,清空原有的局域类型表
+                        locaTypeTable.clear();
 
-                    if(!check(TokenType.R_PAREN))
-                        analyseCallParamList();
-                    expect(TokenType.R_PAREN);
-                    funcLevel--;
+                        if(!check(TokenType.R_PAREN))
+                            analyseCallParamList();
+                        expect(TokenType.R_PAREN);
+                        funcLevel--;
 
-                    //重新取出原有的类型表
-                    locaTypeTable = typeTable.get(funcLevel);
+                        //重新取出原有的类型表
+                        locaTypeTable = typeTable.get(funcLevel);
 
-                    instructions.add(new Instruction(Operation.call,id));
+                        instructions.add(new Instruction(Operation.call,id));
 
-                    //获取原有的slot偏移
-                    stackSetoff1 = slotTable.get(funcLevel);
-                    //判断返回值类型
-                    if(type == Type.Void)
-                    {
-                        isSameType =  (recentType == Type.Void);
-                        recentType = Type.Void;
-                    }
-                    else if(type == Type.Int)
-                    {
-                        isSameType =  (recentType == Type.Int);
-                        recentType = Type.Int;
-                    }
-                    else
-                    {
-                        isSameType =  (recentType == Type.Double);
-                        recentType = Type.Double;
-                    }
-                    isTrue = false;
+                        //获取原有的slot偏移
+                        stackSetoff1 = slotTable.get(funcLevel);
+                        //判断返回值类型
+                        if(type == Type.Void)
+                        {
+                            isSameType =  (recentType == Type.Void);
+                            recentType = Type.Void;
+                        }
+                        else if(type == Type.Int)
+                        {
+                            isSameType =  (recentType == Type.Int);
+                            recentType = Type.Int;
+                        }
+                        else
+                        {
+                            isSameType =  (recentType == Type.Double);
+                            recentType = Type.Double;
+                        }
+                        isTrue = false;
+                	}
                 }//赋值表达式
                 else if(check(TokenType.ASSIGN))
                 {
@@ -936,8 +938,8 @@ public final class Analyser {
         analyseExpr();
         int mark2 = instructions.size();
         analyseBlockStml();
-        instructions.add(new Instruction(Operation.br,mark1));
         int mark3 = instructions.size();
+        instructions.add(new Instruction(Operation.br,mark1-mark3-2));
         if(anti)
             instructions.add(mark2,new Instruction(Operation.brfalse,mark3-mark2+1));
         else
