@@ -934,13 +934,14 @@ public final class Analyser {
         expect(TokenType.WHILE_KW);
         int mark1 = instructions.size();
         analyseExpr();
+        int mark2 = instructions.size();
         analyseBlockStml();
         instructions.add(new Instruction(Operation.br,mark1));
-        int mark2 = instructions.size();
+        int mark3 = instructions.size();
         if(anti)
-            instructions.add(mark1,new Instruction(Operation.brfalse,mark2+1));
+            instructions.add(mark2,new Instruction(Operation.brfalse,mark3-mark2+1));
         else
-            instructions.add(mark1,new Instruction(Operation.brtrue,mark2+1));
+            instructions.add(mark2,new Instruction(Operation.brtrue,mark3-mark2+1));
         stackSetoff1--;
     }
 
