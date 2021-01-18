@@ -189,27 +189,57 @@ public class Tokenizer {
     }
 
     private Token lexChar() throws TokenizeError{
-        StringBuffer s = new StringBuffer();
-        Pos spos=it.currentPos();
-        Pos epos=it.nextPos();
+    	String s= "";
+        char peek;
         it.nextChar();
-        if(StringIter.isRegularChar(it.peekChar())){
-            if(it.peekChar()=='\\'){
-                if(!isEscapeSequence(s))
-                    throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
-            }
-            else
-                s.append(it.nextChar());
-            if(it.peekChar()!='\'')
-                throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
-            else {
+        Token token=new Token(TokenType.CHAR_LITERAL, "", it.currentPos(), it.currentPos());
+        while(!it.isEOF()){
+            peek = it.peekChar();
+            if(peek != '\'' && peek != '\r' && peek != '\n' && peek != '\t'){
+                if(peek == '\\'){
+                    it.nextChar();
+                    peek = it.peekChar();
+                    if(peek != '\"' && peek != '\\' && peek != '\'' && peek != 'n' && peek != 't' && peek != 'r'){
+                        throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+                    }
+                    else {
+                        switch (peek) {
+                            case '\\':
+                                s += '\\';
+                                break;
+                            case '\"':
+                                s += '\"';
+                                break;
+                            case '\'':
+                                s += '\'';
+                                break;
+                            case 'n':
+                                s += '\n';
+                                break;
+                            case 't':
+                                s += '\t';
+                                break;
+                            case 'r':
+                                s += '\r';
+                                break;
+                        }
+                    }
+                }
+                else{
+                    s+= peek;
+                }
                 it.nextChar();
-                epos = it.currentPos();
-                return new Token(TokenType.CHAR_LITERAL, s.toString(),spos,epos );
+            }
+            if(it.nextChar() != '\''){
+                throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+            }
+            else {
+                break;
             }
         }
-        else
-            throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+        token.setValue(s);
+        token.setEndPos(it.currentPos());
+        return token;
     }
 
     private Token lexIdentOrKeyword() throws TokenizeError {
