@@ -756,6 +756,7 @@ public final class Analyser {
             instructions.add(new Instruction(Operation.push,l));
             stackSetoff1++;
             locaTypeTable.put(stackSetoff1,Type.Int);
+            recentType = Type.Int;
         }
         else if(check(TokenType.DOUBLE_LITERAL))
         {
@@ -765,6 +766,7 @@ public final class Analyser {
             instructions.add(new Instruction(Operation.push,l));
             stackSetoff1++;
             locaTypeTable.put(stackSetoff1,Type.Double);
+            recentType = Type.Double;
         }
         else if(check(TokenType.STRING_LITERAL))
             expect(TokenType.STRING_LITERAL);
